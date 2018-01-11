@@ -24,7 +24,7 @@ mattermost:
   iconUrl: "https://s3-eu-west-1.amazonaws.com/renanvicente/toy13.png"
   username: Bot
 proxy:
-  enable: true
+  enable: false
   host: "192.168.0.1"
   port: 3128
   user: #
