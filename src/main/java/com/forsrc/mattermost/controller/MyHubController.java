@@ -72,11 +72,13 @@ public class MyHubController {
             mattermost.setIconUrl(iconUrl);
         }
 
+        /**
         try {
             text.append(Type.of(type).getText(queryParameters, payload));
         } catch (Exception e) {
             text.append("\nerror: " + e.getMessage()).append("\n");
         }
+        **/
 
         String js = request.getParameter("js");
         if (!StringUtils.isEmpty(js)) {
