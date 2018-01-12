@@ -107,6 +107,9 @@ public class MyHubController {
     private String getTextFromJs(String js, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");
+        
+        engine.eval(Files.newBufferedReader(Paths.get(new ClassPathResource("js/json2.js").getFile().getAbsolutePath()), StandardCharsets.UTF_8));
+
         File jsFile = new ClassPathResource(js).getFile();
         // read script file
         engine.eval(Files.newBufferedReader(Paths.get(jsFile.getAbsolutePath()), StandardCharsets.UTF_8));
