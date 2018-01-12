@@ -1,93 +1,122 @@
-package com.forsrc.mattermost;
+package mattermost.controller;
 
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Date;
+import java.util.Map;
 
-import javax.net.ssl.SSLContext;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import javax.servlet.http.HttpServletRequest;
 
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContexts;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@SpringBootApplication
+import mattermost.domain.MattermostIncomingWebhooks;
+import mattermost.service.Type;
+
 @RestController
-public class Application {
+public class MyHubController {
 
-    @Value("${proxy.enable}")
-    private boolean proxyEnable;
+    @Value("${mattermost.incoming}")
+    private String mattermostIncoming;
 
-    @Value("${proxy.host}")
-    private String proxyHost;
+    @Value("${mattermost.iconUrl}")
+    private String iconUrl;
 
-    @Value("${proxy.port}")
-    private Integer proxyPort;
+    @Value("${mattermost.username}")
+    private String username;
 
-    @Value("${proxy.user}")
-    private String proxyUser;
+    @Autowired
+    private RestTemplate restTemplate;
 
-    @Value("${proxy.password}")
-    private String proxyPassword;
+    @RequestMapping("/hooks")
+    public ResponseEntity<String> hoooks(@RequestParam("type") String type, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
+            @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
 
-    @RequestMapping("/")
-    public String home() {
-        return "Hello Docker World";
-    }
+        StringBuilder text = new StringBuilder();
+        String t = request.getParameter("text");
+        t = t == null ? "" : t.replaceAll("\\\\n", "\n");
 
-    @Bean
-    public ObjectMapper mapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
-        return mapper;
-    }
+        text.append(t);
+        MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
+        mattermost.setChannel(channel);
 
-    @Bean
-    public RestTemplate restTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-
-        if (!proxyEnable) {
-            return new RestTemplate();
+        if (StringUtils.isEmpty(username)) {
+            mattermost.setUsername(this.username);
+        } else {
+            mattermost.setUsername(username);
         }
 
-        SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+        String iconUrl = queryParameters.get("icon_url");
+        if (StringUtils.isEmpty(iconUrl)) {
+            mattermost.setIconUrl(this.iconUrl);
+        } else {
+            mattermost.setIconUrl(iconUrl);
+        }
 
-        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-        credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword));
+        try {
+            text.append(Type.of(type).getText(queryParameters, payload));
+        } catch (Exception e) {
+            text.append("\nerror: " + e.getMessage()).append("\n");
+        }
 
-        HttpHost myProxy = new HttpHost(proxyHost, proxyPort);
-        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-        clientBuilder.setSSLContext(sslContext).setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-        clientBuilder.setProxy(myProxy).setDefaultCredentialsProvider(credsProvider).disableCookieManagement();
+        String js = request.getParameter("js");
+        if (!StringUtils.isEmpty(js)) {
+            String[] j = js.split(",");
+            for (String file : j) {
+                try {
+                    text.append(getTextFromJs(file.trim(), queryParameters, payload));
+                } catch (Exception e) {
+                    text.append("error: ").append(file.trim()).append(" -> ").append(e.getMessage()).append("\n");
+                }
+            }
+        } else {
 
-        HttpClient httpClient = clientBuilder.build();
-        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
-        factory.setHttpClient(httpClient);
+            try {
+                text.append(getTextFromJs("js/toText.js", queryParameters, payload));
+            } catch (Exception e) {
+                text.append("error: ").append("js/toText.js").append(" -> ").append(e.getMessage()).append("\n");
+            }
 
-        return new RestTemplate(factory);
+        }
+        mattermost.setText(text.toString());
+        HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
+        String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
+
+        return new ResponseEntity<>(resp, HttpStatus.OK);
     }
 
-    public static void main(String[] args) {
+    private String getTextFromJs(String js, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("JavaScript");
+        File jsFile = new ClassPathResource(js).getFile();
+        // read script file
+        engine.eval(Files.newBufferedReader(Paths.get(jsFile.getAbsolutePath()), StandardCharsets.UTF_8));
 
-        SpringApplication.run(Application.class, args);
+        Invocable inv = (Invocable) engine;
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String query = objectMapper.writeValueAsString(queryParameters);
+        String payloadString = objectMapper.writeValueAsString(payload);
+
+        return inv.invokeFunction("toText", query, payloadString).toString();
     }
-
 }
