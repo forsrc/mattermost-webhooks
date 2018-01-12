@@ -48,7 +48,7 @@ public class MyHubController {
     private RestTemplate restTemplate;
 
     @RequestMapping("/hooks")
-    public ResponseEntity<String> hoooks(@RequestParam("type") String type, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
+    public ResponseEntity<String> hoooks(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
             @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
 
         StringBuilder text = new StringBuilder();
@@ -72,15 +72,15 @@ public class MyHubController {
             mattermost.setIconUrl(iconUrl);
         }
 
-        /**
-        try {
-            text.append(Type.of(type).getText(queryParameters, payload));
-        } catch (Exception e) {
-            text.append("\nerror: " + e.getMessage()).append("\n");
+        String type = request.getParameter("type");
+        if (!StringUtils.isEmpty(type)) {
+            try {
+                text.append(Type.of(type).getText(queryParameters, payload));
+            } catch (Exception e) {
+                text.append("\nerror: " + e.getMessage()).append("\n");
+            }
         }
-        **/
 
-        String js = request.getParameter("js");
         if (!StringUtils.isEmpty(js)) {
             String[] j = js.split(",");
             for (String file : j) {
@@ -109,11 +109,11 @@ public class MyHubController {
     private String getTextFromJs(String js, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");
-        
-        engine.eval(Files.newBufferedReader(Paths.get(new ClassPathResource("js/json2.js").getFile().getAbsolutePath()), StandardCharsets.UTF_8));
+
+        File jsonFile = new ClassPathResource("js/json2.js").getFile();
+        engine.eval(Files.newBufferedReader(Paths.get(jsonFile.getAbsolutePath()), StandardCharsets.UTF_8));
 
         File jsFile = new ClassPathResource(js).getFile();
-        // read script file
         engine.eval(Files.newBufferedReader(Paths.get(jsFile.getAbsolutePath()), StandardCharsets.UTF_8));
 
         Invocable inv = (Invocable) engine;
