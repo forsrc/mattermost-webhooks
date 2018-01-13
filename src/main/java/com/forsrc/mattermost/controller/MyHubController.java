@@ -1,4 +1,4 @@
-package mattermost.controller;
+package com.forsrc.mattermost.controller;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +14,8 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.io.IOUtils;
+import org.mockito.internal.util.io.IOUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -28,9 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.forsrc.mattermost.domain.MattermostIncomingWebhooks;
+import com.forsrc.mattermost.service.Type;
 
-import mattermost.domain.MattermostIncomingWebhooks;
-import mattermost.service.Type;
+
 
 @RestController
 public class MyHubController {
@@ -110,11 +113,15 @@ public class MyHubController {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");
 
-        File jsonFile = new ClassPathResource("js/json2.js").getFile();
-        engine.eval(Files.newBufferedReader(Paths.get(jsonFile.getAbsolutePath()), StandardCharsets.UTF_8));
+        String jsonJs = IOUtils.toString(new ClassPathResource("js/json2.js").getInputStream(), StandardCharsets.UTF_8);
+        engine.eval(jsonJs);
 
-        File jsFile = new ClassPathResource(js).getFile();
-        engine.eval(Files.newBufferedReader(Paths.get(jsFile.getAbsolutePath()), StandardCharsets.UTF_8));
+        if (js.startsWith("classpath:")) {
+            String jsText = IOUtils.toString(new ClassPathResource(js).getInputStream(), StandardCharsets.UTF_8);
+            engine.eval(jsText);
+        } else {
+            engine.eval(Files.newBufferedReader(Paths.get(new File(js).getAbsolutePath()), StandardCharsets.UTF_8));
+        }
 
         Invocable inv = (Invocable) engine;
 

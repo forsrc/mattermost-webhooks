@@ -1,4 +1,4 @@
-package mattermost.service;
+package com.forsrc.mattermost.service;
 
 import java.util.Date;
 import java.util.Map;
