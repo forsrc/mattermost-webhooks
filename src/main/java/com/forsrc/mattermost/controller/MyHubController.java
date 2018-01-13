@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Date;
 import java.util.Map;
 
 import javax.script.Invocable;
@@ -15,8 +14,8 @@ import javax.script.ScriptException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
-import org.mockito.internal.util.io.IOUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
@@ -32,7 +31,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forsrc.mattermost.domain.MattermostIncomingWebhooks;
 import com.forsrc.mattermost.service.Type;
-import com.forsrc.mattermost.utils.RestUtils;
 
 
 
@@ -49,7 +47,12 @@ public class MyHubController {
     private String username;
 
     @Autowired
+    @Qualifier("restTemplate")
     private RestTemplate restTemplate;
+    
+    @Autowired
+    @Qualifier("httpsRestTemplate")
+    private RestTemplate httpsRestTemplate;
 
     @RequestMapping("/hooks")
     public ResponseEntity<String> hoooks(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
@@ -107,7 +110,7 @@ public class MyHubController {
         String resp = "NG";
         HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
         if (hooks.startsWith("https")) {
-            resp = RestUtils.getHttpsRestTemplate().postForObject(hooks, httpEntity, String.class);
+            resp = httpsRestTemplate.postForObject(hooks, httpEntity, String.class);
         } else {
             resp = restTemplate.postForObject(hooks, httpEntity, String.class);
         }

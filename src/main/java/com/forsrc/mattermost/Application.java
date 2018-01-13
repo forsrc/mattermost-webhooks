@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -61,7 +62,8 @@ public class Application {
         return mapper;
     }
 
-    @Bean
+    @Bean("restTemplate")
+    @Primary
     public RestTemplate restTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
 
         if (!proxyEnable) {
@@ -85,6 +87,27 @@ public class Application {
         return new RestTemplate(factory);
     }
 
+    @Bean("httpsRestTemplate")
+    @Primary
+    public RestTemplate httpsRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+        SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
+
+        clientBuilder.setSSLContext(sslContext).setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+
+        if (!proxyEnable) {
+            CredentialsProvider credsProvider = new BasicCredentialsProvider();
+            credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword));
+            HttpHost myProxy = new HttpHost(proxyHost, proxyPort);
+            clientBuilder.setProxy(myProxy).setDefaultCredentialsProvider(credsProvider).disableCookieManagement();
+        }
+
+        HttpClient httpClient = clientBuilder.build();
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        factory.setHttpClient(httpClient);
+
+        return new RestTemplate(factory);
+    }
     public static void main(String[] args) {
 
         SpringApplication.run(Application.class, args);
