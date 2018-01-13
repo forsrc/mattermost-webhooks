@@ -14,6 +14,8 @@ import javax.script.ScriptException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,10 +56,13 @@ public class MyHubController {
     @Qualifier("httpsRestTemplate")
     private RestTemplate httpsRestTemplate;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyHubController.class);
+
     @RequestMapping("/hooks")
     public ResponseEntity<String> hoooks(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
             @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
 
+        LOGGER.info("--> url: " + request.getRequestURL());
         StringBuilder text = new StringBuilder();
         String t = request.getParameter("text");
         t = t == null ? "" : t.replaceAll("\\\\n", "\n");
@@ -107,6 +112,7 @@ public class MyHubController {
 
         }
         mattermost.setText(text.toString());
+        LOGGER.info("--> text: " + text.toString());
         String resp = "NG";
         HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
         if (hooks.startsWith("https")) {
@@ -114,7 +120,7 @@ public class MyHubController {
         } else {
             resp = restTemplate.postForObject(hooks, httpEntity, String.class);
         }
-
+        LOGGER.info("--> response: " + resp);
         return new ResponseEntity<>(resp, HttpStatus.OK);
     }
 
