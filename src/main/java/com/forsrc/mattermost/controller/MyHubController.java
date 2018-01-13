@@ -32,6 +32,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forsrc.mattermost.domain.MattermostIncomingWebhooks;
 import com.forsrc.mattermost.service.Type;
+import com.forsrc.mattermost.utils.RestUtils;
 
 
 
@@ -103,8 +104,13 @@ public class MyHubController {
 
         }
         mattermost.setText(text.toString());
+        String resp = "NG";
         HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
-        String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
+        if (hooks.startsWith("https")) {
+            resp = RestUtils.getHttpsRestTemplate().postForObject(hooks, httpEntity, String.class);
+        } else {
+            resp = restTemplate.postForObject(hooks, httpEntity, String.class);
+        }
 
         return new ResponseEntity<>(resp, HttpStatus.OK);
     }
