@@ -19,8 +19,10 @@ function toText(queryString, payloadString) {
         text += "|:--------------------|:--------------------------------------|:------|" + "\n";
         text += "| user                | " +  "@" + review.user.login      + " | -     |" + "\n";
         text += "| url                 | " + review.html_url               + " | -     |" + "\n";
-        text += "| body                | " + review.body                   + " | -     |" + "\n";
+        //text += "| body                | " + review.body                   + " | -     |" + "\n";
         text += "| url                 | " + review.html_url               + " | -     |" + "\n";
+        text += "** message: ** \n";
+        text += "- [x] " + review.body;
 
     }
 
@@ -33,9 +35,11 @@ function toText(queryString, payloadString) {
         text += "|:--------------------|:---------------------------------------|:------|" + "\n";
         text += "| user                | " + "@" + comment.user.login       + " | -     |" + "\n";
         text += "| url                 | " + comment.html_url               + " | -     |" + "\n";
-        text += "| body                | " + comment.body                   + " | -     |" + "\n";
-        text += "| url                 | " + comment.html_url                + " | -     |" + "\n";
+        //text += "| body                | " + comment.body                   + " | -     |" + "\n";
+        text += "| url                 | " + comment.html_url               + " | -     |" + "\n";
         text += "| repository          | " + payload.repository.full_name   + " | -     |" + "\n";
+        text += "** message: ** \n";
+        text += "- [x] " + pr.body;
     }
 
     var pusher = payload.pusher;
@@ -50,10 +54,10 @@ function toText(queryString, payloadString) {
         var commits = payload.commits;
         var commit = null;
         var commitText = "";
+        text += "** commits: ** \n";
         for (var key in commits) {
             commit = commits[key];
-            commitText = commit.message + " ⇒  @" + commit.committer.name;
-            text += "| commits             | " + commitText                     + " | -     |" + "\n";
+            text += "- [x] " + commit.message + " ⇒  @" + commit.committer.name + "\n";
         }
         
     }
@@ -70,11 +74,12 @@ function toText(queryString, payloadString) {
         text += "| url                 | " + pr.html_url                   + " | -     |" + "\n";
         text += "| created_at          | " + pr.created_at                 + " | -     |" + "\n";
         text += "| updated_at          | " + pr.updated_at                 + " | -     |" + "\n";
-        text += "| body                | " + pr.body                       + " | -     |" + "\n";
+        //text += "| body                | " + pr.body                       + " | -     |" + "\n";
         text += "| review_comments_url | " + pr.review_comments_url        + " | -     |" + "\n";
         text += "| sender              | " + "@"+ payload.sender.login     + " | -     |" + "\n";
         text += "| repository          | " + payload.repository.full_name  + " | -     |" + "\n";
-
+        text += "** message: ** \n";
+        text += "- [x] " + pr.body;
     }
     return text;
 }
