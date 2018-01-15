@@ -21,13 +21,14 @@ function toText(queryString, payloadString) {
         text += "| url                 | " + review.html_url               + " | -     |" + "\n";
         //text += "| body                | " + review.body                   + " | -     |" + "\n";
         text += "| url                 | " + review.html_url               + " | -     |" + "\n";
+        text += "| repository          | " + payload.repository.full_name  + " | -     |" + "\n";
         text += "** message: ** \n";
-        text += "- [x] " + review.body;
+        text += "- [x] " + payload.body;
 
     }
 
     var comment = payload.comment;
-    if (review) {
+    if (comment) {
         text += "\n#### " + "[PR comment](" + comment.html_url + ") #### \n";
         text += "\n";
 
@@ -39,7 +40,7 @@ function toText(queryString, payloadString) {
         text += "| url                 | " + comment.html_url               + " | -     |" + "\n";
         text += "| repository          | " + payload.repository.full_name   + " | -     |" + "\n";
         text += "** message: ** \n";
-        text += "- [x] " + pr.body;
+        text += "- [x] " + payload.body;
     }
 
     var pusher = payload.pusher;
@@ -51,6 +52,7 @@ function toText(queryString, payloadString) {
         text += "|:--------------------|:---------------------------------------|:------|" + "\n";
         text += "| pusher              | " + "@" + pusher.name              + " | -     |" + "\n";
         text += "| compare             | " + payload.compare                + " | -     |" + "\n";
+        text += "| repository          | " + payload.repository.full_name   + " | -     |" + "\n";
         var commits = payload.commits;
         var commit = null;
         var commitText = "";
@@ -75,7 +77,7 @@ function toText(queryString, payloadString) {
         text += "| created_at          | " + pr.created_at                 + " | -     |" + "\n";
         text += "| updated_at          | " + pr.updated_at                 + " | -     |" + "\n";
         //text += "| body                | " + pr.body                       + " | -     |" + "\n";
-        text += "| review_comments_url | " + pr.review_comments_url        + " | -     |" + "\n";
+        //text += "| review_comments_url | " + pr.review_comments_url        + " | -     |" + "\n";
         text += "| sender              | " + "@"+ payload.sender.login     + " | -     |" + "\n";
         text += "| repository          | " + payload.repository.full_name  + " | -     |" + "\n";
         text += "** message: ** \n";
