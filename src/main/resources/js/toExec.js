@@ -5,7 +5,7 @@ function exec(queryString, payloadString) {
     var payload = JSON.parse(payloadString);
 
     //java.lang.System.out.println(queryString)
-    var cmdUtils = Java.type("mattermost.utils.CmdUtils");
+    var cmdUtils = Java.type("com.forsrc.mattermost.utils.CmdUtils");
  
     var cmd = ["cmd", "/c", "echo", "OK"];
     text += cmdUtils.exec(cmd);
