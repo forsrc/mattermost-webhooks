@@ -133,9 +133,9 @@ public class MyHubController {
     public ResponseEntity<String> cmd(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
             @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
 
-        log.info("--> hoooks: {}", request.getRequestURI());
-        log.info("--> queryParameters: {}", queryParameters);
-        log.info("--> payload: {}", payload);
+        LOGGER.info("--> hoooks: {}", request.getRequestURI());
+        LOGGER.info("--> queryParameters: {}", queryParameters);
+        LOGGER.info("--> payload: {}", payload);
         StringBuilder text = new StringBuilder();
         String t = request.getParameter("text");
         t = t == null ? "" : t.replaceAll("\\\\n", "\n");
@@ -160,13 +160,13 @@ public class MyHubController {
             }
 
         }
-        log.info("--> text: {}", text.toString());
+        LOGGER.info("--> text: {}", text.toString());
         MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
         mattermost.setChannel(channel);
         HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
         String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
 
-        log.info("--> Response: {}", resp);
+        LOGGER.info("--> Response: {}", resp);
         return new ResponseEntity<>(resp, HttpStatus.OK);
     }
 
