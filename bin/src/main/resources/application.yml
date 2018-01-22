@@ -1,0 +1,31 @@
+server:
+  port: 8077
+  context-path: /myhubot
+
+#TODO: figure out why I need this here and in bootstrap.yml
+spring:
+  application:
+    name: testLatticeApp
+
+ribbon:
+  ServerListRefreshInterval: 1000
+
+endpoints:
+  health:
+    sensitive: false
+  restart:
+    enabled: true
+  shutdown:
+    enabled: true
+
+
+mattermost:
+  incoming: "/hooks/xxxx"
+  iconUrl: "https://s3-eu-west-1.amazonaws.com/renanvicente/toy13.png"
+  username: Bot
+proxy:
+  enable: false
+  host: "192.168.0.1"
+  port: 3128
+  user: #
+  password: #

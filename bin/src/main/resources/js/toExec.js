@@ -11,8 +11,6 @@ function exec(queryString, payloadString) {
     text += cmdUtils.exec(cmd);
     java.lang.System.out.println("--> " + text)
 
-    text += "\n";
-
     cmd = ["echo", "OK"];
     text += cmdUtils.exec(cmd);
     java.lang.System.out.println("--> " + text)
