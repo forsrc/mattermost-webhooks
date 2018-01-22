@@ -124,18 +124,64 @@ public class MyHubController {
         return new ResponseEntity<>(resp, HttpStatus.OK);
     }
 
-    private String getTextFromJs(String js, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
+        private String getTextFromJs(String js, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
+
+        return execJs(js, "toText", queryParameters, payload).toString();
+    }
+
+    @RequestMapping("/cmd")
+    public ResponseEntity<String> cmd(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
+            @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
+
+        log.info("--> hoooks: {}", request.getRequestURI());
+        log.info("--> queryParameters: {}", queryParameters);
+        log.info("--> payload: {}", payload);
+        StringBuilder text = new StringBuilder();
+        String t = request.getParameter("text");
+        t = t == null ? "" : t.replaceAll("\\\\n", "\n");
+
+        text.append(t);
+
+        if (!StringUtils.isEmpty(js)) {
+            String[] j = js.split(",");
+            for (String file : j) {
+                try {
+                    text.append(execJs(file.trim(), "exec", queryParameters, payload));
+                } catch (Exception e) {
+                    text.append("error: ").append(file.trim()).append(" -> ").append(e.getMessage()).append("\n");
+                }
+            }
+        } else {
+
+            try {
+                text.append(execJs("js/toExec.js", "exec", queryParameters, payload));
+            } catch (Exception e) {
+                text.append("error: ").append("js/toExec.js").append(" -> ").append(e.getMessage()).append("\n");
+            }
+
+        }
+        log.info("--> text: {}", text.toString());
+        MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
+        mattermost.setChannel(channel);
+        HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
+        String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
+
+        log.info("--> Response: {}", resp);
+        return new ResponseEntity<>(resp, HttpStatus.OK);
+    }
+
+    private Object execJs(String js, String function, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("JavaScript");
 
-        String jsonJs = IOUtils.toString(new ClassPathResource("js/json2.js").getInputStream(), StandardCharsets.UTF_8);
-        engine.eval(jsonJs);
+        String json2 = IOUtils.toString(new ClassPathResource("js/json2.js").getInputStream(), "UTF-8");
+        engine.eval(json2);
 
-        if (js.startsWith("classpath:")) {
-            String jsText = IOUtils.toString(new ClassPathResource(js).getInputStream(), StandardCharsets.UTF_8);
-            engine.eval(jsText);
+        if (js.startsWith("file://")) {
+            engine.eval(Files.newBufferedReader(Paths.get(new File(js.replaceAll("file://", "")).getAbsolutePath()), StandardCharsets.UTF_8));
         } else {
-            engine.eval(Files.newBufferedReader(Paths.get(new File(js).getAbsolutePath()), StandardCharsets.UTF_8));
+            String jsText = IOUtils.toString(new ClassPathResource(js).getInputStream(), "UTF-8");
+            engine.eval(jsText);
         }
 
         Invocable inv = (Invocable) engine;
@@ -144,6 +190,7 @@ public class MyHubController {
         String query = objectMapper.writeValueAsString(queryParameters);
         String payloadString = objectMapper.writeValueAsString(payload);
 
-        return inv.invokeFunction("toText", query, payloadString).toString();
+        return inv.invokeFunction(function, query, payloadString);
     }
 }
+
