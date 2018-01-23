@@ -2,6 +2,7 @@ package com.forsrc.mattermost.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -136,7 +137,12 @@ public class MyHubController {
 
         Map<String, Object> payload = new HashMap<>();
         if (0 < request.getContentLength()) {
-            payload = new ObjectMapper().readValue(request.getInputStream(), Map.class);
+            String body = IOUtils.toString(request.getInputStream(), Charset.forName("UTF-8"));
+            try {
+                payload = new ObjectMapper().readValue(body, Map.class);
+            } catch (Exception e) {
+                payload.put("body", body);
+            }
         }
 
         LOGGER.info("--> hoooks: {}", request.getRequestURI());
