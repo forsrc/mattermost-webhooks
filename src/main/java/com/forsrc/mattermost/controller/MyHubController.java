@@ -186,7 +186,7 @@ public class MyHubController {
 
     private Object execJs(String js, String function, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
         ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("JavaScript");
+        ScriptEngine engine = manager.getEngineByName("nashorn");
 
         String json2 = IOUtils.toString(new ClassPathResource("js/json2.js").getInputStream(), "UTF-8");
         engine.eval(json2);
