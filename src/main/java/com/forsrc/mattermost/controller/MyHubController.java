@@ -163,6 +163,7 @@ public class MyHubController {
         LOGGER.info("--> text: {}", text.toString());
         MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
         mattermost.setChannel(channel);
+        mattermost.setText(text.toString());
         HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
         String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
 
