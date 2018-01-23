@@ -19,10 +19,9 @@ function exec(queryString, payloadString) {
     if (url.indexOf("/build") > 0) {
         url = url.substring(0, url.indexOf("/build"));
     }
-    url = url.replace("http://192.168.28.26:8888", "https://13.112.37.68");
-    text += url;
+    text += url + "\n";
 
     var cmdUtils = Java.type("com.forsrc.mattermost.utils.CmdUtils");
-    cmdUtils.exec(cmd);
+    text += cmdUtils.exec(cmd);
     return text;
 }

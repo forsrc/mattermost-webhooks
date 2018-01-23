@@ -132,7 +132,7 @@ public class MyHubController {
     }
 
     @RequestMapping("/cmd")
-    public ResponseEntity<String> cmd(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
+    public ResponseEntity<MattermostIncomingWebhooks> cmd(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
             @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws Exception {
 
         Map<String, Object> payload = new HashMap<>();
@@ -175,12 +175,13 @@ public class MyHubController {
         LOGGER.info("--> text: {}", text.toString());
         MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
         mattermost.setChannel(channel);
+        mattermost.setUsername(username);
         mattermost.setText(text.toString());
         HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
         String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
 
         LOGGER.info("--> Response: {}", resp);
-        return new ResponseEntity<>(resp, HttpStatus.OK);
+        return new ResponseEntity<>(mattermost, HttpStatus.OK);
     }
 
     private Object execJs(String js, String function, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
