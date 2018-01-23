@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.script.Invocable;
@@ -131,7 +132,12 @@ public class MyHubController {
 
     @RequestMapping("/cmd")
     public ResponseEntity<String> cmd(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
-            @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
+            @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        if (0 < request.getContentLength()) {
+            payload = new ObjectMapper().readValue(request.getInputStream(), Map.class);
+        }
 
         LOGGER.info("--> hoooks: {}", request.getRequestURI());
         LOGGER.info("--> queryParameters: {}", queryParameters);
