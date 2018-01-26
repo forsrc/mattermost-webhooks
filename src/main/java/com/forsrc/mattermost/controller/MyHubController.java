@@ -36,8 +36,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forsrc.mattermost.domain.MattermostIncomingWebhooks;
 import com.forsrc.mattermost.service.Type;
 
-
-
 @RestController
 public class MyHubController {
 
@@ -53,16 +51,26 @@ public class MyHubController {
     @Autowired
     @Qualifier("restTemplate")
     private RestTemplate restTemplate;
-    
+
     @Autowired
     @Qualifier("httpsRestTemplate")
     private RestTemplate httpsRestTemplate;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MyHubController.class);
 
-    @RequestMapping("/hooks")
-    public ResponseEntity<String> hoooks(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
-            @RequestParam Map<String, String> queryParameters, @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
+    public ResponseEntity<MattermostIncomingWebhooks> webhoooks(String js, String function, String hooks,
+            String channel, String username, Map<String, String> queryParameters, HttpServletRequest request)
+            throws Exception {
+
+        Map<String, Object> payload = new HashMap<>();
+        if (0 < request.getContentLength()) {
+            String body = IOUtils.toString(request.getInputStream(), Charset.forName("UTF-8"));
+            try {
+                payload = new ObjectMapper().readValue(body, Map.class);
+            } catch (Exception e) {
+                payload.put("body", body);
+            }
+        }
 
         LOGGER.info("--> url: " + request.getRequestURL());
         StringBuilder text = new StringBuilder();
@@ -99,19 +107,11 @@ public class MyHubController {
             String[] j = js.split(",");
             for (String file : j) {
                 try {
-                    text.append(getTextFromJs(file.trim(), queryParameters, payload));
+                    text.append(execJs(file.trim(), function, queryParameters, payload));
                 } catch (Exception e) {
                     text.append("error: ").append(file.trim()).append(" -> ").append(e.getMessage()).append("\n");
                 }
             }
-        } else {
-
-            try {
-                text.append(getTextFromJs("js/toText.js", queryParameters, payload));
-            } catch (Exception e) {
-                text.append("error: ").append("js/toText.js").append(" -> ").append(e.getMessage()).append("\n");
-            }
-
         }
         mattermost.setText(text.toString());
         LOGGER.info("--> text: " + text.toString());
@@ -123,68 +123,29 @@ public class MyHubController {
             resp = restTemplate.postForObject(hooks, httpEntity, String.class);
         }
         LOGGER.info("--> response: " + resp);
-        return new ResponseEntity<>(resp, HttpStatus.OK);
-    }
-
-        private String getTextFromJs(String js, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
-
-        return execJs(js, "toText", queryParameters, payload).toString();
-    }
-
-    @RequestMapping("/cmd")
-    public ResponseEntity<MattermostIncomingWebhooks> cmd(@RequestParam("js") String js, @RequestParam("hooks") String hooks, @RequestParam("channel") String channel, @RequestParam("username") String username,
-            @RequestParam Map<String, String> queryParameters, HttpServletRequest request) throws Exception {
-
-        Map<String, Object> payload = new HashMap<>();
-        if (0 < request.getContentLength()) {
-            String body = IOUtils.toString(request.getInputStream(), Charset.forName("UTF-8"));
-            try {
-                payload = new ObjectMapper().readValue(body, Map.class);
-            } catch (Exception e) {
-                payload.put("body", body);
-            }
-        }
-
-        LOGGER.info("--> hoooks: {}", request.getRequestURI());
-        LOGGER.info("--> queryParameters: {}", queryParameters);
-        LOGGER.info("--> payload: {}", payload);
-        StringBuilder text = new StringBuilder();
-        String t = request.getParameter("text");
-        t = t == null ? "" : t.replaceAll("\\\\n", "\n");
-
-        text.append(t);
-
-        if (!StringUtils.isEmpty(js)) {
-            String[] j = js.split(",");
-            for (String file : j) {
-                try {
-                    text.append(execJs(file.trim(), "exec", queryParameters, payload));
-                } catch (Exception e) {
-                    text.append("error: ").append(file.trim()).append(" -> ").append(e.getMessage()).append("\n");
-                }
-            }
-        } else {
-
-            try {
-                text.append(execJs("js/toExec.js", "exec", queryParameters, payload));
-            } catch (Exception e) {
-                text.append("error: ").append("js/toExec.js").append(" -> ").append(e.getMessage()).append("\n");
-            }
-
-        }
-        LOGGER.info("--> text: {}", text.toString());
-        MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
-        mattermost.setChannel(channel);
-        mattermost.setUsername(username);
-        mattermost.setText(text.toString());
-        HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
-        String resp = restTemplate.postForObject(hooks, httpEntity, String.class);
-
-        LOGGER.info("--> Response: {}", resp);
         return new ResponseEntity<>(mattermost, HttpStatus.OK);
     }
 
-    private Object execJs(String js, String function, Map<String, String> queryParameters, Map<String, Object> payload) throws ScriptException, IOException, NoSuchMethodException {
+    @RequestMapping("/hooks")
+    public ResponseEntity<MattermostIncomingWebhooks> hoooks(@RequestParam("js") String js,
+            @RequestParam("hooks") String hooks, @RequestParam("channel") String channel,
+            @RequestParam("username") String username, @RequestParam Map<String, String> queryParameters,
+            @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
+        return webhoooks(js, "toText", hooks, channel, username, queryParameters, request);
+    }
+
+
+    @RequestMapping("/cmd")
+    public ResponseEntity<MattermostIncomingWebhooks> cmd(@RequestParam("js") String js,
+            @RequestParam("hooks") String hooks, @RequestParam("channel") String channel,
+            @RequestParam("username") String username, @RequestParam Map<String, String> queryParameters,
+            HttpServletRequest request) throws Exception {
+
+        return webhoooks(js, "exec", hooks, channel, username, queryParameters, request);
+    }
+
+    private Object execJs(String js, String function, Map<String, String> queryParameters, Map<String, Object> payload)
+            throws ScriptException, IOException, NoSuchMethodException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("nashorn");
 
@@ -192,7 +153,8 @@ public class MyHubController {
         engine.eval(json2);
 
         if (js.startsWith("file://")) {
-            engine.eval(Files.newBufferedReader(Paths.get(new File(js.replaceAll("file://", "")).getAbsolutePath()), StandardCharsets.UTF_8));
+            engine.eval(Files.newBufferedReader(Paths.get(new File(js.replaceAll("file://", "")).getAbsolutePath()),
+                    StandardCharsets.UTF_8));
         } else {
             String jsText = IOUtils.toString(new ClassPathResource(js).getInputStream(), "UTF-8");
             engine.eval(jsText);
@@ -207,4 +169,3 @@ public class MyHubController {
         return inv.invokeFunction(function, query, payloadString);
     }
 }
-
