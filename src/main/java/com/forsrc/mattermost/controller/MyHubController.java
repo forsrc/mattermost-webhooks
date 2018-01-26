@@ -63,7 +63,7 @@ public class MyHubController {
             throws Exception {
 
         Map<String, Object> payload = new HashMap<>();
-        if (0 < request.getContentLength()) {
+        if (request.getContentLength() > 0) {
             String body = IOUtils.toString(request.getInputStream(), Charset.forName("UTF-8"));
             try {
                 payload = new ObjectMapper().readValue(body, Map.class);
@@ -130,7 +130,7 @@ public class MyHubController {
     public ResponseEntity<MattermostIncomingWebhooks> hoooks(@RequestParam("js") String js,
             @RequestParam("hooks") String hooks, @RequestParam("channel") String channel,
             @RequestParam("username") String username, @RequestParam Map<String, String> queryParameters,
-            @RequestBody Map<String, Object> payload, HttpServletRequest request) throws Exception {
+            HttpServletRequest request) throws Exception {
         return webhoooks(js, "toText", hooks, channel, username, queryParameters, request);
     }
 
