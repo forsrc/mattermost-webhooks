@@ -28,3 +28,5 @@ nbdist/
 */target/*
 */transaction-logs
 *logs
+bin
+bin/*
