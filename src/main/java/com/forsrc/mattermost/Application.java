@@ -70,20 +70,16 @@ public class Application {
             return new RestTemplate();
         }
 
-        SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
 
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
         credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword));
-
         HttpHost myProxy = new HttpHost(proxyHost, proxyPort);
-        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-        clientBuilder.setSSLContext(sslContext).setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
         clientBuilder.setProxy(myProxy).setDefaultCredentialsProvider(credsProvider).disableCookieManagement();
 
         HttpClient httpClient = clientBuilder.build();
         HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
         factory.setHttpClient(httpClient);
-
         return new RestTemplate(factory);
     }
 
