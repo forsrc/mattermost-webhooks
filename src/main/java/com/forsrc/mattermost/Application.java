@@ -84,7 +84,6 @@ public class Application {
     }
 
     @Bean("httpsRestTemplate")
-    @Primary
     public RestTemplate httpsRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
         SSLContext sslContext = SSLContexts.custom().loadTrustMaterial(new TrustSelfSignedStrategy()).build();
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
