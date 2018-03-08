@@ -90,7 +90,7 @@ public class Application {
 
         clientBuilder.setSSLContext(sslContext).setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
 
-        if (!proxyEnable) {
+        if (proxyEnable) {
             CredentialsProvider credsProvider = new BasicCredentialsProvider();
             credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), new UsernamePasswordCredentials(proxyUser, proxyPassword));
             HttpHost myProxy = new HttpHost(proxyHost, proxyPort);
