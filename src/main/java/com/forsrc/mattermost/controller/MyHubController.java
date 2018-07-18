@@ -168,4 +168,29 @@ public class MyHubController {
 
         return inv.invokeFunction(function, query, payloadString);
     }
+
+    /*
+    @RequestMapping(value = "/slash", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded;charset=UTF-8")
+    public ResponseEntity<MattermostIncomingWebhooks> slash(
+            @RequestParam(required = false) Map<String, Object> queryParameters,
+            @RequestBody(required = false) MultiValueMap<String, Object> requestBody) throws Exception {
+
+        MattermostIncomingWebhooks mattermost = new MattermostIncomingWebhooks();
+        mattermost.setIconUrl(iconUrl);
+        mattermost.setUsername(username);
+        mattermost.setChannel(channel);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String query = queryParameters == null ? "{}" : objectMapper.writeValueAsString(queryParameters);
+
+        String body = requestBody == null ? "{}" : objectMapper.writeValueAsString(requestBody);
+
+        String text = (String) JsUtils.execJs("/js/toSlash.js", "toText", query, body);
+        mattermost.setText(text);
+
+        HttpEntity<MattermostIncomingWebhooks> httpEntity = new HttpEntity<>(mattermost);
+        String resp = restTemplate.postForObject(incoming, httpEntity, String.class);
+        return new ResponseEntity<>(mattermost, HttpStatus.OK);
+    }
+    */
 }
